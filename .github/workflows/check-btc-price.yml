@@ -1,0 +1,12 @@
+name: Check BTC Price
+
+on:
+  schedule:
+    - cron: '*/1 * * * *'  # Runs every 10 minutes
+
+jobs:
+  check-price:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Curl request
+      run: curl -X POST https://jocular-hotteok-abf45c.netlify.app/.netlify/functions/bot
