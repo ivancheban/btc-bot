@@ -2,13 +2,17 @@ const { Telegraf } = require('telegraf');
 const axios = require('axios');
 
 const bot = new Telegraf(process.env.TOKEN);
+const CHAT_ID = '-4561434244';
+
+let lastBtcPrice = null;
+let lastNotificationTime = null;
 
 async function getBtcPrice() {
   try {
-    console.log('Attempting to fetch BTC price from CoinGecko API');
-    const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
-    console.log('CoinGecko API response:', response.data);
-    return response.data.bitcoin.usd;
+    console.log('Attempting to fetch BTC price from Binance API');
+    const response = await axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+    console.log('Binance API response:', response.data);
+    return parseFloat(response.data.price);
   } catch (error) {
     console.error('Error fetching BTC price:', error.message);
     if (error.response) {
@@ -19,17 +23,58 @@ async function getBtcPrice() {
   }
 }
 
+async function sendBtcPriceUpdate(ctx, price, force = false, chatId = CHAT_ID) {
+  const currentTime = new Date();
+
+  if (lastBtcPrice === null) {
+    lastBtcPrice = price;
+    lastNotificationTime = currentTime;
+    await ctx.telegram.sendMessage(chatId, `🚨 BTC Price Update 🚨\nCurrent BTC price: $${price.toFixed(2)}`);
+    return;
+  }
+
+  const priceChangePercent = ((price - lastBtcPrice) / lastBtcPrice) * 100;
+
+  if (force || Math.abs(priceChangePercent) >= 2 || (currentTime - lastNotificationTime) >= 3600000) { // 3600000 ms = 1 hour
+    let emoji;
+    if (price > lastBtcPrice) {
+      emoji = "🟩";  // Green square for price increase
+    } else if (price < lastBtcPrice) {
+      emoji = "🔻";  // Red down-pointing triangle for price decrease
+    } else {
+      emoji = "▪️";  // Black square for no change (unlikely with float values)
+    }
+
+    const message = `🚨 BTC Price Update 🚨\nCurrent BTC price: $${price.toFixed(2)}\n${emoji} Change: ${priceChangePercent.toFixed(2)}%`;
+    await ctx.telegram.sendMessage(chatId, message);
+    lastBtcPrice = price;
+    lastNotificationTime = currentTime;
+  }
+}
+
+async function checkBtcPrice(ctx) {
+  const price = await getBtcPrice();
+  if (price) {
+    await sendBtcPriceUpdate(ctx, price);
+  } else {
+    console.error("Failed to fetch BTC price");
+  }
+}
+
 bot.command('price', async (ctx) => {
   console.log('Price command received');
   const price = await getBtcPrice();
   if (price) {
-    console.log(`Sending BTC price: $${price.toFixed(2)}`);
-    await ctx.reply(`Current BTC price: $${price.toFixed(2)}`);
+    await sendBtcPriceUpdate(ctx, price, true, ctx.chat.id);
   } else {
-    console.log('Failed to fetch BTC price');
     await ctx.reply("Sorry, I couldn't fetch the BTC price at the moment.");
   }
 });
+
+// Set up a timer to check BTC price every 10 seconds
+setInterval(() => {
+  checkBtcPrice(bot);
+}, 10000);
 
 exports.handler = async (event) => {
   try {
