@@ -2,6 +2,7 @@ import os
 import logging
 import json
 import asyncio
+import sys
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 import pytz
@@ -36,6 +37,9 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.message.reply_text("Sorry, I couldn't fetch the BTC price at the moment.")
 
 async def webhook(event):
+    print("Webhook function called")
+    print("Event:", event)
+
     application = Application.builder().token(TOKEN).build()
     application.add_handler(CommandHandler("price", price_command))
 
@@ -45,11 +49,13 @@ async def webhook(event):
     except Exception as e:
         logger.error(f"Error processing update: {str(e)}")
 
-    return {"statusCode": 200}
+    return {"statusCode": 200, "body": json.dumps({"message": "OK"})}
 
-def handler(event, context):
+def handler(event):
     return asyncio.get_event_loop().run_until_complete(webhook(event))
 
-# This is just for testing the script execution
 if __name__ == "__main__":
-    print("Python script executed successfully")
+    print("Python script started")
+    event = json.loads(sys.argv[1])
+    result = handler(event)
+    print(json.dumps(result))
