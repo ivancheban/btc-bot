@@ -2,7 +2,7 @@ name: Check BTC Price
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/10 * * * *'
   workflow_dispatch:  # This allows manual triggering
 
 jobs:
@@ -11,8 +11,12 @@ jobs:
     steps:
     - name: Curl request
       run: |
-        response=$(curl -X POST https://jocular-hotteok-abf45c.netlify.app/.netlify/functions/bot -H "Content-Type: application/json" -d '{"message":{"text":"/price"}}')
+        echo "Sending request to ${{ secrets.NETLIFY_URL }}"
+        response=$(curl -v -X POST ${{ secrets.NETLIFY_URL }} -H "Content-Type: application/json" -d '{"message":{"text":"/price"}}')
         echo "Response: $response"
+        echo "Response length: ${#response}"
+        curl_exit_code=$?
+        echo "cURL exit code: $curl_exit_code"
       env:
         NETLIFY_URL: ${{ secrets.NETLIFY_URL }}
     - name: Check response
@@ -20,4 +24,6 @@ jobs:
         if [[ -z "$response" ]]; then
           echo "Error: No response received"
           exit 1
+        else
+          echo "Response received successfully"
         fi
