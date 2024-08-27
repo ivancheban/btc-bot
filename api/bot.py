@@ -1,10 +1,11 @@
 import os
 import logging
+import json
+import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 import pytz
 import aiohttp
-from http.server import BaseHTTPRequestHandler
 
 # Enable detailed logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -35,21 +36,24 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     else:
         await update.message.reply_text("Sorry, I couldn't fetch the BTC price at the moment.")
 
-async def webhook(request):
+async def webhook(event, context):
+    """
+    This function processes incoming webhook events from Telegram.
+    """
     application = Application.builder().token(TOKEN).build()
     application.add_handler(CommandHandler("price", price_command))
 
-    update = Update.de_json(await request.json(), application.bot)
-    await application.process_update(update)
+    try:
+        update = Update.de_json(json.loads(event['body']), application.bot)
+        await application.process_update(update)
+    except Exception as e:
+        logger.error(f"Error processing update: {str(e)}")
+
     return {"statusCode": 200}
 
-class Handler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
-        
-        asyncio.run(webhook(post_data))
-        
-        self.send_response(200)
-        self.end_headers()
-        return
+def handler(event, context):
+    """
+    This is the main handler function for AWS Lambda / Netlify Function.
+    It wraps the asynchronous webhook function in a synchronous call.
+    """
+    return asyncio.get_event_loop().run_until_complete(webhook(event, context))
