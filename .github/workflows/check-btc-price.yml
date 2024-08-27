@@ -9,7 +9,7 @@ jobs:
   check-price:
     runs-on: ubuntu-latest
     steps:
-    - name: Curl request
+    - name: Curl request and check response
       run: |
         echo "Sending request to ${{ secrets.NETLIFY_URL }}"
         response=$(curl -v -X POST ${{ secrets.NETLIFY_URL }} -H "Content-Type: application/json" -d '{"message":{"text":"/price"}}')
@@ -17,13 +17,12 @@ jobs:
         echo "Response length: ${#response}"
         curl_exit_code=$?
         echo "cURL exit code: $curl_exit_code"
-      env:
-        NETLIFY_URL: ${{ secrets.NETLIFY_URL }}
-    - name: Check response
-      run: |
+        
         if [[ -z "$response" ]]; then
           echo "Error: No response received"
           exit 1
         else
           echo "Response received successfully"
         fi
+      env:
+        NETLIFY_URL: ${{ secrets.NETLIFY_URL }}
