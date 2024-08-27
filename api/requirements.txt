@@ -1,3 +1,2 @@
-python-telegram-bot==20.3
-pytz==2023.3
-aiohttp==3.8.4
+telegraf
+axios

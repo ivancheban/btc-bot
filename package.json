@@ -1,0 +1,10 @@
+{
+  "name": "telegram-btc-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for BTC price",
+  "main": "api/bot.js",
+  "dependencies": {
+    "telegraf": "^4.12.2",
+    "axios": "^0.27.2"
+  }
+}

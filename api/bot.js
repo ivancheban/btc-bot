@@ -1,38 +1,33 @@
-const { exec } = require('child_process');
-const path = require('path');
+const { Telegraf } = require('telegraf');
+const axios = require('axios');
 
-exports.handler = function(event, context, callback) {
-  console.log("Function called");
-  console.log("Event:", JSON.stringify(event));
+const bot = new Telegraf(process.env.TOKEN);
 
-  const pythonScriptPath = path.join(__dirname, 'bot_handler.py');
-  const python = path.join(__dirname, '.python_packages/lib/site-packages/python3.9');
-  const pythonPath = process.env.PYTHONPATH ? `${process.env.PYTHONPATH}:${python}` : python;
+async function getBtcPrice() {
+  try {
+    const response = await axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+    return parseFloat(response.data.price);
+  } catch (error) {
+    console.error('Error fetching BTC price:', error);
+    return null;
+  }
+}
 
-  const env = Object.assign({}, process.env, { PYTHONPATH: pythonPath });
+bot.command('price', async (ctx) => {
+  const price = await getBtcPrice();
+  if (price) {
+    await ctx.reply(`Current BTC price: $${price.toFixed(2)}`);
+  } else {
+    await ctx.reply("Sorry, I couldn't fetch the BTC price at the moment.");
+  }
+});
 
-  exec(`python ${pythonScriptPath} '${JSON.stringify(event)}'`, { env }, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`exec error: ${error}`);
-      return callback(null, {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'Failed to execute Python script' })
-      });
-    }
-    console.log(`stdout: ${stdout}`);
-    console.error(`stderr: ${stderr}`);
-    
-    try {
-      const result = JSON.parse(stdout);
-      callback(null, {
-        statusCode: result.statusCode || 200,
-        body: JSON.stringify(result)
-      });
-    } catch (e) {
-      callback(null, {
-        statusCode: 200,
-        body: JSON.stringify({ message: 'Python script executed successfully', output: stdout })
-      });
-    }
-  });
+exports.handler = async (event) => {
+  try {
+    await bot.handleUpdate(JSON.parse(event.body));
+    return { statusCode: 200, body: 'OK' };
+  } catch (e) {
+    console.error('error in handler:', e);
+    return { statusCode: 400, body: 'This endpoint is meant for bot and telegram communication' };
+  }
 };
