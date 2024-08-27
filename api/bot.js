@@ -9,10 +9,10 @@ let lastNotificationTime = null;
 
 async function getBtcPrice() {
   try {
-    console.log('Attempting to fetch BTC price from CoinGecko API');
-    const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
-    console.log('CoinGecko API response:', response.data);
-    return response.data.bitcoin.usd;
+    console.log('Attempting to fetch BTC price from CoinDesk API');
+    const response = await axios.get('https://api.coindesk.com/v1/bpi/currentprice/BTC.json');
+    console.log('CoinDesk API response:', response.data);
+    return parseFloat(response.data.bpi.USD.rate.replace(',', ''));
   } catch (error) {
     console.error('Error fetching BTC price:', error.message);
     if (error.response) {
@@ -70,9 +70,6 @@ bot.command('price', async (ctx) => {
     await ctx.reply("Sorry, I couldn't fetch the BTC price at the moment.");
   }
 });
-
-// We can't use setInterval in a serverless function, so we'll remove it
-// and rely on periodic invocations of the function instead
 
 exports.handler = async (event) => {
   try {
