@@ -6,3 +6,11 @@
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+
+[functions]
+  node_bundler = "esbuild"
+
+[functions."api/bot"]
+  included_files = ["api/bot.js"]
+  external_node_modules = ["axios", "telegraf"]
+  timeout = 30
