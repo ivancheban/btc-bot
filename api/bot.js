@@ -9,10 +9,10 @@ let lastNotificationTime = null;
 
 async function getBtcPrice() {
   try {
-    console.log('Attempting to fetch BTC price from Binance API');
-    const response = await axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
-    console.log('Binance API response:', response.data);
-    return parseFloat(response.data.price);
+    console.log('Attempting to fetch BTC price from CoinGecko API');
+    const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+    console.log('CoinGecko API response:', response.data);
+    return response.data.bitcoin.usd;
   } catch (error) {
     console.error('Error fetching BTC price:', error.message);
     if (error.response) {
@@ -71,15 +71,17 @@ bot.command('price', async (ctx) => {
   }
 });
 
-// Set up a timer to check BTC price every 10 seconds
-setInterval(() => {
-  checkBtcPrice(bot);
-}, 10000);
+// We can't use setInterval in a serverless function, so we'll remove it
+// and rely on periodic invocations of the function instead
 
 exports.handler = async (event) => {
   try {
     console.log('Received webhook event:', event.body);
     await bot.handleUpdate(JSON.parse(event.body));
+    
+    // Check BTC price after handling the update
+    await checkBtcPrice(bot);
+    
     return { statusCode: 200, body: 'OK' };
   } catch (e) {
     console.error('Error in handler:', e);
