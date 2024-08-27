@@ -7,6 +7,13 @@ const CHAT_ID = '-4561434244';
 let lastBtcPrice = null;
 let lastNotificationTime = null;
 
+function formatPrice(price) {
+  return price.toLocaleString('en-US', {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3
+  });
+}
+
 async function getBtcPrice() {
   try {
     console.log('Attempting to fetch BTC price from CoinDesk API');
@@ -29,7 +36,7 @@ async function sendBtcPriceUpdate(ctx, price, force = false, chatId = CHAT_ID) {
   if (lastBtcPrice === null) {
     lastBtcPrice = price;
     lastNotificationTime = currentTime;
-    await ctx.telegram.sendMessage(chatId, `🚨 BTC Price Update 🚨\nCurrent BTC price: $${price.toFixed(2)}`);
+    await ctx.telegram.sendMessage(chatId, `🚨 BTC Price Update 🚨\nCurrent BTC price: ${formatPrice(price)} USD`);
     return;
   }
 
@@ -45,7 +52,7 @@ async function sendBtcPriceUpdate(ctx, price, force = false, chatId = CHAT_ID) {
       emoji = "▪️";  // Black square for no change (unlikely with float values)
     }
 
-    const message = `🚨 BTC Price Update 🚨\nCurrent BTC price: $${price.toFixed(2)}\n${emoji} Change: ${priceChangePercent.toFixed(2)}%`;
+    const message = `🚨 BTC Price Update 🚨\nCurrent BTC price: ${formatPrice(price)} USD\n${emoji} Change: ${priceChangePercent.toFixed(2)}%`;
     await ctx.telegram.sendMessage(chatId, message);
     lastBtcPrice = price;
     lastNotificationTime = currentTime;
