@@ -2,11 +2,22 @@ name: Check BTC Price
 
 on:
   schedule:
-    - cron: '*/1 * * * *'  # Runs every 10 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:  # This allows manual triggering
 
 jobs:
   check-price:
     runs-on: ubuntu-latest
     steps:
     - name: Curl request
-      run: curl -X POST https://jocular-hotteok-abf45c.netlify.app/.netlify/functions/bot
+      run: |
+        response=$(curl -X POST https://jocular-hotteok-abf45c.netlify.app/.netlify/functions/bot -H "Content-Type: application/json" -d '{"message":{"text":"/price"}}')
+        echo "Response: $response"
+      env:
+        NETLIFY_URL: ${{ secrets.NETLIFY_URL }}
+    - name: Check response
+      run: |
+        if [[ -z "$response" ]]; then
+          echo "Error: No response received"
+          exit 1
+        fi
