@@ -7,7 +7,6 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 import pytz
 import aiohttp
 
-# Enable detailed logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -36,10 +35,7 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     else:
         await update.message.reply_text("Sorry, I couldn't fetch the BTC price at the moment.")
 
-async def webhook(event, context):
-    """
-    This function processes incoming webhook events from Telegram.
-    """
+async def webhook(event):
     application = Application.builder().token(TOKEN).build()
     application.add_handler(CommandHandler("price", price_command))
 
@@ -52,8 +48,8 @@ async def webhook(event, context):
     return {"statusCode": 200}
 
 def handler(event, context):
-    """
-    This is the main handler function for AWS Lambda / Netlify Function.
-    It wraps the asynchronous webhook function in a synchronous call.
-    """
-    return asyncio.get_event_loop().run_until_complete(webhook(event, context))
+    return asyncio.get_event_loop().run_until_complete(webhook(event))
+
+# This is just for testing the script execution
+if __name__ == "__main__":
+    print("Python script executed successfully")
