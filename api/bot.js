@@ -36,13 +36,13 @@ async function sendBtcPriceUpdate(ctx, price, force = false, chatId = CHAT_ID) {
   if (lastBtcPrice === null) {
     lastBtcPrice = price;
     lastNotificationTime = currentTime;
-    await ctx.telegram.sendMessage(chatId, `🚨 BTC Price Update 🚨\nCurrent BTC price: ${formatPrice(price)} USD`);
+    await ctx.telegram.sendMessage(chatId, `🚨 Initial BTC Price 🚨\nCurrent BTC price: ${formatPrice(price)} USD`);
     return;
   }
 
   const priceChangePercent = ((price - lastBtcPrice) / lastBtcPrice) * 100;
 
-  if (force || Math.abs(priceChangePercent) >= 2 || (currentTime - lastNotificationTime) >= 3600000) { // 3600000 ms = 1 hour
+  if (force || Math.abs(priceChangePercent) >= 0.5 || (currentTime - lastNotificationTime) >= 3600000) { // 3600000 ms = 1 hour
     let emoji;
     if (price > lastBtcPrice) {
       emoji = "🟩";  // Green square for price increase
@@ -72,7 +72,22 @@ bot.command('price', async (ctx) => {
   console.log('Price command received');
   const price = await getBtcPrice();
   if (price) {
-    await sendBtcPriceUpdate(ctx, price, true, ctx.chat.id);
+    if (lastBtcPrice === null) {
+      await ctx.reply(`Current BTC price: ${formatPrice(price)} USD`);
+    } else {
+      const priceChangePercent = ((price - lastBtcPrice) / lastBtcPrice) * 100;
+      let emoji;
+      if (price > lastBtcPrice) {
+        emoji = "🟩";
+      } else if (price < lastBtcPrice) {
+        emoji = "🔻";
+      } else {
+        emoji = "▪️";
+      }
+      await ctx.reply(`Current BTC price: ${formatPrice(price)} USD\n${emoji} Change: ${priceChangePercent.toFixed(2)}%`);
+    }
+    lastBtcPrice = price;
+    lastNotificationTime = new Date();
   } else {
     await ctx.reply("Sorry, I couldn't fetch the BTC price at the moment.");
   }
