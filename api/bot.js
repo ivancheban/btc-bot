@@ -36,7 +36,7 @@ async function sendBtcPriceUpdate(ctx, price, force = false, chatId = CHAT_ID) {
   if (lastBtcPrice === null) {
     lastBtcPrice = price;
     lastNotificationTime = currentTime;
-    await ctx.telegram.sendMessage(chatId, `🚨 Initial BTC Price 🚨\nCurrent BTC price: ${formatPrice(price)} USD`);
+    await ctx.telegram.sendMessage(chatId, `🚨 BTC Price Update 🚨\nCurrent BTC price: ${formatPrice(price)} USD`);
     return;
   }
 
@@ -72,9 +72,8 @@ bot.command('price', async (ctx) => {
   console.log('Price command received');
   const price = await getBtcPrice();
   if (price) {
-    if (lastBtcPrice === null) {
-      await ctx.reply(`Current BTC price: ${formatPrice(price)} USD`);
-    } else {
+    let message = `🚨 BTC Price Update 🚨\nCurrent BTC price: ${formatPrice(price)} USD`;
+    if (lastBtcPrice !== null) {
       const priceChangePercent = ((price - lastBtcPrice) / lastBtcPrice) * 100;
       let emoji;
       if (price > lastBtcPrice) {
@@ -84,8 +83,9 @@ bot.command('price', async (ctx) => {
       } else {
         emoji = "▪️";
       }
-      await ctx.reply(`Current BTC price: ${formatPrice(price)} USD\n${emoji} Change: ${priceChangePercent.toFixed(2)}%`);
+      message += `\n${emoji} Change: ${priceChangePercent.toFixed(2)}%`;
     }
+    await ctx.reply(message);
     lastBtcPrice = price;
     lastNotificationTime = new Date();
   } else {
