@@ -1,24 +1,28 @@
-name: Check Bot Health
+name: Check BTC Price
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Run every 6 hours
+    - cron: '*/30 * * * *'
   workflow_dispatch:  # This allows manual triggering
 
 jobs:
-  check-bot:
+  check-price:
     runs-on: ubuntu-latest
     steps:
-    - name: Ping bot
+    - name: Curl request and check response
       run: |
-        response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.NETLIFY_URL }})
-        if [[ $response == "400" ]]; then
-          echo "Bot is responsive (returned expected 400 status code)"
-        elif [[ $response == "200" ]]; then
-          echo "Bot is responsive (returned 200 status code)"
-        else
-          echo "Bot returned unexpected status code: $response"
+        echo "Sending request to ${{ secrets.NETLIFY_URL }}"
+        response=$(curl -v -X POST ${{ secrets.NETLIFY_URL }} -H "Content-Type: application/json" -d '{"message":{"text":"/price"}}')
+        echo "Response: $response"
+        echo "Response length: ${#response}"
+        curl_exit_code=$?
+        echo "cURL exit code: $curl_exit_code"
+        
+        if [[ -z "$response" ]]; then
+          echo "Error: No response received"
           exit 1
+        else
+          echo "Response received successfully"
         fi
       env:
         NETLIFY_URL: ${{ secrets.NETLIFY_URL }}
