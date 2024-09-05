@@ -5,6 +5,7 @@ const bot = new Telegraf(process.env.TOKEN);
 const CHAT_ID = '-4561434244';
 
 let lastBtcPrice = null;
+let lastNotificationTime = null;
 
 function formatPrice(price) {
   return price.toLocaleString('en-US', {
@@ -30,15 +31,18 @@ async function getBtcPrice() {
 }
 
 async function sendBtcPriceUpdate(ctx, price, force = false, chatId = CHAT_ID) {
+  const currentTime = new Date();
+
   if (lastBtcPrice === null) {
     lastBtcPrice = price;
-    await ctx.telegram.sendMessage(chatId, `🚨 Initial BTC Price 🚨\nCurrent BTC price: ${formatPrice(price)} USD`);
+    lastNotificationTime = currentTime;
+    await ctx.telegram.sendMessage(chatId, `🚨 BTC Price Update 🚨\nCurrent BTC price: ${formatPrice(price)} USD`);
     return;
   }
 
   const priceChangePercent = ((price - lastBtcPrice) / lastBtcPrice) * 100;
 
-  if (force || Math.abs(priceChangePercent) >= 2) {
+  if (force || Math.abs(priceChangePercent) >= 0.5 || (currentTime - lastNotificationTime) >= 3600000) { // 3600000 ms = 1 hour
     let emoji;
     if (price > lastBtcPrice) {
       emoji = "🟩";  // Green square for price increase
@@ -51,6 +55,7 @@ async function sendBtcPriceUpdate(ctx, price, force = false, chatId = CHAT_ID) {
     const message = `🚨 BTC Price Update 🚨\nCurrent BTC price: ${formatPrice(price)} USD\n${emoji} Change: ${priceChangePercent.toFixed(2)}%`;
     await ctx.telegram.sendMessage(chatId, message);
     lastBtcPrice = price;
+    lastNotificationTime = currentTime;
   }
 }
 
@@ -67,7 +72,22 @@ bot.command('price', async (ctx) => {
   console.log('Price command received');
   const price = await getBtcPrice();
   if (price) {
-    await sendBtcPriceUpdate(ctx, price, true, ctx.chat.id);
+    let message = `🚨 BTC Price Update 🚨\nCurrent BTC price: ${formatPrice(price)} USD`;
+    if (lastBtcPrice !== null) {
+      const priceChangePercent = ((price - lastBtcPrice) / lastBtcPrice) * 100;
+      let emoji;
+      if (price > lastBtcPrice) {
+        emoji = "🟩";
+      } else if (price < lastBtcPrice) {
+        emoji = "🔻";
+      } else {
+        emoji = "▪️";
+      }
+      message += `\n${emoji} Change: ${priceChangePercent.toFixed(2)}%`;
+    }
+    await ctx.reply(message);
+    lastBtcPrice = price;
+    lastNotificationTime = new Date();
   } else {
     await ctx.reply("Sorry, I couldn't fetch the BTC price at the moment.");
   }
