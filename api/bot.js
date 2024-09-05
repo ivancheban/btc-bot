@@ -5,7 +5,6 @@ const bot = new Telegraf(process.env.TOKEN);
 const CHAT_ID = '-4561434244';
 
 let lastBtcPrice = null;
-let lastNotificationTime = null;
 
 function formatPrice(price) {
   return price.toLocaleString('en-US', {
@@ -30,33 +29,24 @@ async function getBtcPrice() {
   }
 }
 
-async function sendBtcPriceUpdate(ctx, price, force = false, chatId = CHAT_ID) {
-  const currentTime = new Date();
+async function sendBtcPriceUpdate(ctx, price, chatId = CHAT_ID) {
+  let message = `🚨 BTC Price Update 🚨\nCurrent BTC price: ${formatPrice(price)} USD`;
 
-  if (lastBtcPrice === null) {
-    lastBtcPrice = price;
-    lastNotificationTime = currentTime;
-    await ctx.telegram.sendMessage(chatId, `🚨 BTC Price Update 🚨\nCurrent BTC price: ${formatPrice(price)} USD`);
-    return;
-  }
-
-  const priceChangePercent = ((price - lastBtcPrice) / lastBtcPrice) * 100;
-
-  if (force || Math.abs(priceChangePercent) >= 0.5 || (currentTime - lastNotificationTime) >= 3600000) { // 3600000 ms = 1 hour
+  if (lastBtcPrice !== null) {
+    const priceChangePercent = ((price - lastBtcPrice) / lastBtcPrice) * 100;
     let emoji;
     if (price > lastBtcPrice) {
-      emoji = "🟩";  // Green square for price increase
+      emoji = "🟩";
     } else if (price < lastBtcPrice) {
-      emoji = "🔻";  // Red down-pointing triangle for price decrease
+      emoji = "🔻";
     } else {
-      emoji = "▪️";  // Black square for no change (unlikely with float values)
+      emoji = "▪️";
     }
-
-    const message = `🚨 BTC Price Update 🚨\nCurrent BTC price: ${formatPrice(price)} USD\n${emoji} Change: ${priceChangePercent.toFixed(2)}%`;
-    await ctx.telegram.sendMessage(chatId, message);
-    lastBtcPrice = price;
-    lastNotificationTime = currentTime;
+    message += `\n${emoji} Change: ${priceChangePercent.toFixed(2)}%`;
   }
+
+  await ctx.telegram.sendMessage(chatId, message);
+  lastBtcPrice = price;
 }
 
 async function checkBtcPrice(ctx) {
@@ -72,22 +62,7 @@ bot.command('price', async (ctx) => {
   console.log('Price command received');
   const price = await getBtcPrice();
   if (price) {
-    let message = `🚨 BTC Price Update 🚨\nCurrent BTC price: ${formatPrice(price)} USD`;
-    if (lastBtcPrice !== null) {
-      const priceChangePercent = ((price - lastBtcPrice) / lastBtcPrice) * 100;
-      let emoji;
-      if (price > lastBtcPrice) {
-        emoji = "🟩";
-      } else if (price < lastBtcPrice) {
-        emoji = "🔻";
-      } else {
-        emoji = "▪️";
-      }
-      message += `\n${emoji} Change: ${priceChangePercent.toFixed(2)}%`;
-    }
-    await ctx.reply(message);
-    lastBtcPrice = price;
-    lastNotificationTime = new Date();
+    await sendBtcPriceUpdate(ctx, price, ctx.chat.id);
   } else {
     await ctx.reply("Sorry, I couldn't fetch the BTC price at the moment.");
   }
@@ -96,6 +71,15 @@ bot.command('price', async (ctx) => {
 exports.handler = async (event) => {
   try {
     console.log('Received webhook event:', event.body);
+    
+    // Check if this is a GitHub Actions trigger
+    if (event.body && JSON.parse(event.body).trigger === 'github_action') {
+      console.log('Triggered by GitHub Actions');
+      await checkBtcPrice(bot);
+      return { statusCode: 200, body: 'Price check triggered by GitHub Actions' };
+    }
+    
+    // Handle regular Telegram updates
     await bot.handleUpdate(JSON.parse(event.body));
     
     // Check BTC price after handling the update
