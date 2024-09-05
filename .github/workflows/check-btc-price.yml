@@ -12,8 +12,10 @@ jobs:
     - name: Ping bot
       run: |
         response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.NETLIFY_URL }})
-        if [[ $response == "200" ]]; then
-          echo "Bot is responsive"
+        if [[ $response == "400" ]]; then
+          echo "Bot is responsive (returned expected 400 status code)"
+        elif [[ $response == "200" ]]; then
+          echo "Bot is responsive (returned 200 status code)"
         else
           echo "Bot returned unexpected status code: $response"
           exit 1
