@@ -82,9 +82,6 @@ exports.handler = async (event) => {
     // Handle regular Telegram updates
     await bot.handleUpdate(JSON.parse(event.body));
     
-    // Check BTC price after handling the update
-    await checkBtcPrice(bot);
-    
     return { statusCode: 200, body: 'OK' };
   } catch (e) {
     console.error('Error in handler:', e);
