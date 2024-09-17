@@ -2,7 +2,7 @@ const { Telegraf } = require('telegraf');
 const axios = require('axios');
 
 const bot = new Telegraf(process.env.TOKEN);
-const CHAT_ID = '-4561434244';
+const CHAT_ID = '-1002289271494';
 
 let lastBtcPrice = null;
 
