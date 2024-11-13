@@ -72,7 +72,7 @@ To enable periodic price checks, set up a GitHub Action:
     ```
 
 3. In your GitHub repository settings, go to Secrets and variables > Actions.
-4. Add a new repository secret named `NETLIFY_URL` with your Netlify function URL as the value.
+4. Add a new repository secret named `NETLIFY_URL` with your Netlify function URL as the value. For example, https://my-bitcoin-price-bot.netlify.app/.netlify/functions/bot
 
 ## Usage
 
