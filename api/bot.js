@@ -15,10 +15,10 @@ function formatPrice(price) {
 
 async function getBtcPrice() {
   try {
-    console.log('Attempting to fetch BTC price from CoinDesk API');
-    const response = await axios.get('https://api.coindesk.com/v1/bpi/currentprice/BTC.json');
-    console.log('CoinDesk API response:', response.data);
-    return parseFloat(response.data.bpi.USD.rate.replace(',', ''));
+    console.log('Attempting to fetch BTC price from Binance API');
+    const response = await axios.get('https://api.binance.com/api/v3/avgPrice?symbol=BTCUSDT');
+    console.log('Binance API response:', response.data);
+    return parseFloat(response.data.price);
   } catch (error) {
     console.error('Error fetching BTC price:', error.message);
     if (error.response) {
