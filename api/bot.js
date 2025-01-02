@@ -16,7 +16,7 @@ function formatPrice(price) {
 async function getBtcPrice() {
   try {
     console.log('Attempting to fetch BTC price from Binance API');
-    const response = await axios.get('https://api.binance.us/api/v3/avgPrice?symbol=BTCUSDT');
+    const response = await axios.get('https://api.binance.us/api/v3/trades?symbol=BTCUSDT');
     console.log('Binance API response:', response.data);
     return parseFloat(response.data.price);
   } catch (error) {
